@@ -144,10 +144,14 @@ class GameOverScene extends Phaser.Scene {
         });
 
         // Play sound
-        if (this.won && this.sound.get('win')) {
-            this.sound.play('win', { volume: 0.7 });
-        } else if (!this.won && this.sound.get('lose')) {
-            this.sound.play('lose', { volume: 0.5 });
+        try {
+            if (this.won && this.sound.get('win')) {
+                this.sound.play('win', { volume: 0.7 });
+            } else if (!this.won && this.sound.get('lose')) {
+                this.sound.play('lose', { volume: 0.5 });
+            }
+        } catch (e) {
+            // Sound not loaded, skip
         }
 
         // Confetti for wins

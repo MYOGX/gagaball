@@ -37,66 +37,6 @@ class BootScene extends Phaser.Scene {
         this.scene.start('MenuScene');
     }
 
-    createSounds() {
-        // We'll use simple Web Audio API tones for now
-        // In production, replace with actual audio files
-
-        // Hit sound
-        this.sound.add('hit', {
-            mute: false,
-            volume: 0.7,
-            rate: 1,
-            detune: 0,
-            seek: 0,
-            loop: false,
-            delay: 0
-        });
-
-        // Eliminate sound
-        this.sound.add('eliminate', {
-            mute: false,
-            volume: 0.8,
-            rate: 1,
-            detune: 0,
-            seek: 0,
-            loop: false,
-            delay: 0
-        });
-
-        // Powerup sound
-        this.sound.add('powerup', {
-            mute: false,
-            volume: 0.6,
-            rate: 1,
-            detune: 0,
-            seek: 0,
-            loop: false,
-            delay: 0
-        });
-
-        // Win sound
-        this.sound.add('win', {
-            mute: false,
-            volume: 1,
-            rate: 1,
-            detune: 0,
-            seek: 0,
-            loop: false,
-            delay: 0
-        });
-
-        // Lose sound
-        this.sound.add('lose', {
-            mute: false,
-            volume: 0.8,
-            rate: 1,
-            detune: 0,
-            seek: 0,
-            loop: false,
-            delay: 0
-        });
-    }
-
     checkDailyReward() {
         const result = playerData.claimDailyReward();
 

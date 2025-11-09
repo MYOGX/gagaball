@@ -445,8 +445,12 @@ class GameScene extends Phaser.Scene {
             this.particleSystem.createHitEffect(this.ball.x, this.ball.y, player.fillColor);
 
             // Sound
-            if (this.sound.get('hit')) {
-                this.sound.play('hit', { volume: 0.3 });
+            try {
+                if (this.sound.get('hit')) {
+                    this.sound.play('hit', { volume: 0.3 });
+                }
+            } catch (e) {
+                // Sound not loaded, skip
             }
         }
         // Ball hitting player (elimination check)
@@ -482,8 +486,12 @@ class GameScene extends Phaser.Scene {
         player.nameText.setText(player.isHuman ? 'ELIMINATED!' : 'OUT!');
 
         // Sound
-        if (this.sound.get('eliminate')) {
-            this.sound.play('eliminate', { volume: 0.5 });
+        try {
+            if (this.sound.get('eliminate')) {
+                this.sound.play('eliminate', { volume: 0.5 });
+            }
+        } catch (e) {
+            // Sound not loaded, skip
         }
 
         // Check if human player

@@ -159,8 +159,12 @@ class PowerUp {
         this.applyEffect(player);
 
         // Play sound
-        if (this.scene.sound.get('powerup')) {
-            this.scene.sound.play('powerup', { volume: 0.5 });
+        try {
+            if (this.scene.sound.get('powerup')) {
+                this.scene.sound.play('powerup', { volume: 0.5 });
+            }
+        } catch (e) {
+            // Sound not loaded, skip
         }
     }
 
