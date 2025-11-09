@@ -22,11 +22,11 @@ class LobbyScene extends Phaser.Scene {
 
         try {
             if (this.mode === 'host') {
-                this.createHostLobby(centerX, centerY);
+                this.createHostLobby(centerX, centerY, width, height);
             } else if (this.mode === 'join') {
-                this.createJoinLobby(centerX, centerY);
+                this.createJoinLobby(centerX, centerY, width, height);
             } else {
-                this.createModeSelection(centerX, centerY);
+                this.createModeSelection(centerX, centerY, width, height);
             }
         } catch (error) {
             console.error('LobbyScene error:', error);
@@ -38,7 +38,7 @@ class LobbyScene extends Phaser.Scene {
         }
     }
 
-    createModeSelection(centerX, centerY) {
+    createModeSelection(centerX, centerY, width, height) {
         // Check if PeerJS is available
         if (typeof Peer === 'undefined') {
             this.add.text(centerX, centerY, 'Error: PeerJS library not loaded\nPlease refresh the page', {
@@ -88,7 +88,7 @@ class LobbyScene extends Phaser.Scene {
         }).setOrigin(0.5);
     }
 
-    createHostLobby(centerX, centerY) {
+    createHostLobby(centerX, centerY, width, height) {
         // Title
         this.add.text(centerX, 60, 'HOSTING GAME', {
             fontSize: '42px',
@@ -143,7 +143,7 @@ class LobbyScene extends Phaser.Scene {
         this.initializeHost();
     }
 
-    createJoinLobby(centerX, centerY) {
+    createJoinLobby(centerX, centerY, width, height) {
         // Title
         this.add.text(centerX, 60, 'JOIN GAME', {
             fontSize: '42px',
