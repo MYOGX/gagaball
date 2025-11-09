@@ -1,13 +1,16 @@
 // Menu scene - main menu with stats, shop, and start game
+console.log('Loading MenuScene.js...');
 class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MenuScene' });
     }
 
     create() {
+        console.log('MenuScene: create started');
         const { width, height } = this.cameras.main;
         const centerX = width / 2;
         const centerY = height / 2;
+        console.log('MenuScene dimensions:', width, height);
 
         // Background
         this.add.rectangle(0, 0, width, height, GAME_CONFIG.COLORS.BACKGROUND).setOrigin(0, 0);
