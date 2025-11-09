@@ -29,7 +29,7 @@ const phaserConfig = {
     },
     scene: [BootScene, MenuScene, GameScene, GameOverScene],
     audio: {
-        disableWebAudio: false
+        noAudio: true
     },
     callbacks: {
         preBoot: function (game) {
