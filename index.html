@@ -7,6 +7,26 @@
     <title>GaGa Ball - #1 Pit Boss Challenge</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script>
+        // Early error detection
+        console.log('HTML loaded, scripts will load next...');
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.innerHTML = '<h1>⚠️ Error</h1><p>' + e.message + '</p><p>File: ' + e.filename + '</p><p>Line: ' + e.lineno + '</p>';
+            }
+        });
+
+        // Fallback: hide loading screen after 5 seconds if game hasn't started
+        setTimeout(function() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                console.warn('Game did not start within 5 seconds, hiding loading screen');
+                loadingScreen.style.display = 'none';
+            }
+        }, 5000);
+    </script>
 </head>
 <body>
     <div id="game-container">
@@ -26,5 +46,8 @@
     <script src="js/scenes/GameScene.js"></script>
     <script src="js/scenes/GameOverScene.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        console.log('All scripts loaded successfully!');
+    </script>
 </body>
 </html>

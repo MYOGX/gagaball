@@ -1,4 +1,5 @@
 // Game Over scene - results and rewards
+console.log('Loading GameOverScene.js...');
 class GameOverScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameOverScene' });

@@ -1,4 +1,5 @@
 // Menu scene - main menu with stats, shop, and start game
+console.log('Loading MenuScene.js...');
 class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MenuScene' });

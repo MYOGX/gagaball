@@ -1,4 +1,5 @@
 // Main game scene - core gameplay
+console.log('Loading GameScene.js...');
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });

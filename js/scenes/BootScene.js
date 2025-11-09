@@ -1,4 +1,5 @@
 // Boot scene - initial loading and asset generation
+console.log('Loading BootScene.js...');
 class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
