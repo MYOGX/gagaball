@@ -5,6 +5,12 @@ class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
     }
 
+    init(data) {
+        this.isMultiplayer = data.multiplayer || false;
+        this.isHost = data.isHost || false;
+        this.networkPlayers = {}; // Map of network player ID -> player sprite
+    }
+
     create() {
         const { width, height } = this.cameras.main;
         this.centerX = width / 2;
@@ -36,6 +42,128 @@ class GameScene extends Phaser.Scene {
 
         // First powerup after 10 seconds
         this.time.delayedCall(10000, () => this.spawnPowerup());
+
+        // Setup multiplayer networking
+        if (this.isMultiplayer) {
+            this.setupNetworking();
+        }
+    }
+
+    setupNetworking() {
+        console.log('Setting up multiplayer networking. isHost:', this.isHost);
+
+        // Handle player updates from network
+        networkManager.on('onPlayerUpdate', (data) => {
+            if (data.playerId === networkManager.playerId) return; // Skip own updates
+
+            const networkPlayer = this.networkPlayers[data.playerId];
+            if (networkPlayer && networkPlayer.isAlive) {
+                // Smoothly interpolate to new position
+                this.tweens.add({
+                    targets: networkPlayer,
+                    x: data.x,
+                    y: data.y,
+                    duration: 50,
+                    ease: 'Linear'
+                });
+
+                // Update power shot state
+                if (data.chargingPowerShot !== undefined) {
+                    networkPlayer.chargingPowerShot = data.chargingPowerShot;
+                }
+            }
+        });
+
+        // Handle ball updates from host
+        if (!this.isHost) {
+            networkManager.on('onBallUpdate', (data) => {
+                if (this.ball && this.ball.body) {
+                    this.ball.x = data.x;
+                    this.ball.y = data.y;
+                    this.ball.body.setVelocity(data.vx, data.vy);
+                }
+            });
+        }
+
+        // Handle player eliminations
+        networkManager.on('onGameState', (event, data) => {
+            if (event === 'elimination') {
+                const player = this.networkPlayers[data.playerId] ||
+                              (this.humanPlayer.playerId === data.playerId ? this.humanPlayer : null);
+                if (player && player.isAlive) {
+                    this.eliminatePlayer(player);
+                }
+            } else if (event === 'gameOver') {
+                this.endGame(data.won);
+            }
+        });
+
+        // Create network players for all remote players
+        const allPlayers = networkManager.getAllPlayers();
+        allPlayers.forEach(player => {
+            if (player.id !== networkManager.playerId) {
+                this.createNetworkPlayer(player);
+            }
+        });
+
+        // Mark local player with network ID
+        this.humanPlayer.playerId = networkManager.playerId;
+
+        // Send player updates every frame (throttled in update())
+        this.lastNetworkUpdate = 0;
+        this.networkUpdateInterval = 50; // ms
+    }
+
+    createNetworkPlayer(playerData) {
+        console.log('Creating network player:', playerData);
+
+        // Find a spawn position
+        const angle = Math.random() * Math.PI * 2;
+        const distance = GAME_CONFIG.ARENA_RADIUS * 0.6;
+        const x = this.arena.centerX + Math.cos(angle) * distance;
+        const y = this.arena.centerY + Math.sin(angle) * distance;
+
+        // Create player sprite (similar to createPlayer but for remote player)
+        const player = this.add.circle(x, y, GAME_CONFIG.PLAYER_RADIUS, this.getRandomColor());
+        this.physics.add.existing(player);
+        player.body.setCircle(GAME_CONFIG.PLAYER_RADIUS);
+        player.body.setCollideWorldBounds(false);
+
+        player.isAlive = true;
+        player.isHuman = true; // It's a human, but controlled remotely
+        player.isRemote = true; // Mark as remote player
+        player.playerId = playerData.id;
+        player.invulnerableUntil = Date.now() + GAME_CONFIG.INVULNERABILITY_TIME;
+        player.activePowerup = null;
+        player.powerupEndTime = 0;
+        player.chargingPowerShot = false;
+        player.powerShotReady = true;
+
+        // Player name
+        player.nameText = this.add.text(x, y - 35, playerData.name || 'Player', {
+            fontSize: '12px',
+            fontStyle: 'bold',
+            color: '#ffffff',
+            backgroundColor: '#000000',
+            padding: { x: 5, y: 2 }
+        }).setOrigin(0.5);
+
+        // Invincibility shield
+        player.shield = this.add.circle(x, y, GAME_CONFIG.PLAYER_RADIUS + 10, 0xffffff, 0);
+        player.shield.setStrokeStyle(3, 0x10b981, 1);
+        this.tweens.add({
+            targets: player.shield,
+            alpha: { from: 0.5, to: 0 },
+            duration: 500,
+            yoyo: true,
+            repeat: -1
+        });
+
+        // Add to players array and network players map
+        this.players.push(player);
+        this.networkPlayers[playerData.id] = player;
+
+        return player;
     }
 
     createArena() {
@@ -106,7 +234,10 @@ class GameScene extends Phaser.Scene {
 
     createPlayers() {
         this.players = [];
-        const totalPlayers = GAME_CONFIG.MAX_AI_OPPONENTS + 1; // AI + player
+
+        // In multiplayer, reduce AI count (network players will be added separately)
+        const aiCount = this.isMultiplayer ? 2 : GAME_CONFIG.MAX_AI_OPPONENTS; // Just 2 AI in multiplayer
+        const totalPlayers = aiCount + 1; // AI + local player
 
         for (let i = 0; i < totalPlayers; i++) {
             const angle = (Math.PI * 2 * i) / totalPlayers;
@@ -304,11 +435,44 @@ class GameScene extends Phaser.Scene {
         // Update UI
         this.updateUI();
 
+        // Network synchronization
+        if (this.isMultiplayer) {
+            this.updateNetwork(time);
+        }
+
         // Check win/loss conditions
         this.checkGameOver();
 
         // Keep ball in arena
         this.constrainBallToArena();
+    }
+
+    updateNetwork(time) {
+        // Throttle network updates
+        if (time - this.lastNetworkUpdate < this.networkUpdateInterval) {
+            return;
+        }
+        this.lastNetworkUpdate = time;
+
+        // Send local player position
+        if (this.humanPlayer && this.humanPlayer.isAlive) {
+            networkManager.sendPlayerUpdate({
+                playerId: networkManager.playerId,
+                x: this.humanPlayer.x,
+                y: this.humanPlayer.y,
+                chargingPowerShot: this.humanPlayer.chargingPowerShot || false
+            });
+        }
+
+        // Host sends ball updates
+        if (this.isHost && this.ball && this.ball.body) {
+            networkManager.sendBallUpdate({
+                x: this.ball.x,
+                y: this.ball.y,
+                vx: this.ball.body.velocity.x,
+                vy: this.ball.body.velocity.y
+            });
+        }
     }
 
     updateBall() {
@@ -385,12 +549,14 @@ class GameScene extends Phaser.Scene {
             }
 
             // Human player control
-            if (player.isHuman) {
+            if (player.isHuman && !player.isRemote) {
+                // Only control local human player
                 this.updateHumanPlayer(player, delta);
-            } else {
+            } else if (!player.isHuman) {
                 // AI control
                 this.updateAIPlayer(player, time);
             }
+            // Remote players are updated via network in setupNetworking()
 
             // Constrain to arena
             this.constrainPlayerToArena(player);
@@ -541,6 +707,11 @@ class GameScene extends Phaser.Scene {
         player.isAlive = false;
         this.eliminationCount++;
 
+        // Broadcast elimination in multiplayer
+        if (this.isMultiplayer && player.playerId) {
+            networkManager.sendPlayerEliminated(player.playerId);
+        }
+
         // Create dramatic effect
         this.activateSlowMotion();
 
@@ -555,8 +726,8 @@ class GameScene extends Phaser.Scene {
         // (Add audio files in preload to enable)
 
         // Check if human player
-        if (player.isHuman) {
-            // Ragdoll effect for human
+        if (player.isHuman && !player.isRemote) {
+            // Local human player eliminated - ragdoll effect
             this.tweens.add({
                 targets: player,
                 alpha: 0,
@@ -569,6 +740,28 @@ class GameScene extends Phaser.Scene {
             this.time.delayedCall(1000, () => {
                 this.endGame(false);
             });
+        } else if (player.isHuman && player.isRemote) {
+            // Remote human player eliminated - move outside to watch
+            const angle = Math.random() * Math.PI * 2;
+            const sitDistance = GAME_CONFIG.ARENA_RADIUS + 80;
+            const sitX = this.arena.centerX + Math.cos(angle) * sitDistance;
+            const sitY = this.arena.centerY + Math.sin(angle) * sitDistance;
+
+            this.tweens.add({
+                targets: player,
+                x: sitX,
+                y: sitY,
+                scale: 0.7,
+                alpha: 0.5,
+                duration: 800,
+                ease: 'Power2',
+                onUpdate: () => {
+                    player.nameText.x = player.x;
+                    player.nameText.y = player.y - 25;
+                }
+            });
+
+            player.nameText.setText('😢 OUT');
         } else {
             // Move AI outside the arena to sit and watch!
             const angle = Math.random() * Math.PI * 2;

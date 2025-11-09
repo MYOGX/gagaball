@@ -52,9 +52,10 @@ class MenuScene extends Phaser.Scene {
         this.createStatsPanel(centerX, 220);
 
         // Buttons
-        this.createButton(centerX, 400, 'PLAY NOW', () => this.startGame(), 0x10b981);
-        this.createButton(centerX, 470, 'SHOP', () => this.openShop(), 0x6366f1);
-        this.createButton(centerX, 540, 'STATS', () => this.openStats(), 0xec4899);
+        this.createButton(centerX, 370, 'PLAY SOLO', () => this.startGame(), 0x10b981);
+        this.createButton(centerX, 435, 'PLAY ONLINE 🌐', () => this.startMultiplayer(), 0x3b82f6);
+        this.createButton(centerX, 500, 'SHOP', () => this.openShop(), 0x6366f1);
+        this.createButton(centerX, 565, 'STATS', () => this.openStats(), 0xec4899);
 
         // Footer info
         this.add.text(centerX, height - 40, 'Desktop: WASD/Arrows | Mobile: Touch to move', {
@@ -167,7 +168,11 @@ class MenuScene extends Phaser.Scene {
     }
 
     startGame() {
-        this.scene.start('GameScene');
+        this.scene.start('GameScene', { multiplayer: false });
+    }
+
+    startMultiplayer() {
+        this.scene.start('LobbyScene');
     }
 
     openShop() {
