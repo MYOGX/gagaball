@@ -144,16 +144,8 @@ class GameOverScene extends Phaser.Scene {
             ease: 'Bounce.easeOut'
         });
 
-        // Play sound
-        try {
-            if (this.won && this.sound.get('win')) {
-                this.sound.play('win', { volume: 0.7 });
-            } else if (!this.won && this.sound.get('lose')) {
-                this.sound.play('lose', { volume: 0.5 });
-            }
-        } catch (e) {
-            // Sound not loaded, skip
-        }
+        // Sound - disabled for now
+        // (Add audio files in preload to enable)
 
         // Confetti for wins
         if (this.won) {
