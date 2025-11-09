@@ -6,11 +6,13 @@ class LobbyScene extends Phaser.Scene {
     }
 
     init(data) {
-        this.mode = data.mode; // 'host' or 'join'
-        this.roomId = data.roomId || null;
+        this.mode = data ? data.mode : null; // 'host' or 'join'
+        this.roomId = data ? data.roomId : null;
     }
 
     create() {
+        console.log('LobbyScene create() - mode:', this.mode);
+
         const { width, height } = this.cameras.main;
         const centerX = width / 2;
         const centerY = height / 2;
@@ -18,16 +20,39 @@ class LobbyScene extends Phaser.Scene {
         // Background
         this.add.rectangle(0, 0, width, height, 0x1e1b4b).setOrigin(0, 0);
 
-        if (this.mode === 'host') {
-            this.createHostLobby(centerX, centerY);
-        } else if (this.mode === 'join') {
-            this.createJoinLobby(centerX, centerY);
-        } else {
-            this.createModeSelection(centerX, centerY);
+        try {
+            if (this.mode === 'host') {
+                this.createHostLobby(centerX, centerY);
+            } else if (this.mode === 'join') {
+                this.createJoinLobby(centerX, centerY);
+            } else {
+                this.createModeSelection(centerX, centerY);
+            }
+        } catch (error) {
+            console.error('LobbyScene error:', error);
+            this.add.text(centerX, centerY, 'Error loading lobby\nCheck console for details', {
+                fontSize: '24px',
+                color: '#ff0000',
+                align: 'center'
+            }).setOrigin(0.5);
         }
     }
 
     createModeSelection(centerX, centerY) {
+        // Check if PeerJS is available
+        if (typeof Peer === 'undefined') {
+            this.add.text(centerX, centerY, 'Error: PeerJS library not loaded\nPlease refresh the page', {
+                fontSize: '20px',
+                color: '#ff0000',
+                align: 'center'
+            }).setOrigin(0.5);
+
+            this.createButton(centerX, centerY + 100, 'BACK', () => {
+                this.scene.start('MenuScene');
+            }, 0x6366f1, 200);
+            return;
+        }
+
         // Title
         this.add.text(centerX, 80, 'MULTIPLAYER', {
             fontSize: '48px',
@@ -162,8 +187,8 @@ class LobbyScene extends Phaser.Scene {
             this.scene.start('LobbyScene');
         }, 0x6366f1, 200);
 
-        // Keyboard input
-        this.input.keyboard.on('keydown', (event) => {
+        // Keyboard input - save handler so we can clean it up
+        this.keydownHandler = (event) => {
             const key = event.key.toUpperCase();
 
             if (key === 'BACKSPACE') {
@@ -175,7 +200,16 @@ class LobbyScene extends Phaser.Scene {
             }
 
             this.updateRoomCodeDisplay();
-        });
+        };
+
+        this.input.keyboard.on('keydown', this.keydownHandler);
+    }
+
+    shutdown() {
+        // Clean up keyboard listeners
+        if (this.keydownHandler) {
+            this.input.keyboard.off('keydown', this.keydownHandler);
+        }
     }
 
     updateRoomCodeDisplay() {
