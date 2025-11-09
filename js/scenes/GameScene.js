@@ -147,6 +147,11 @@ class GameScene extends Phaser.Scene {
         player.frozen = false;
         player.frozenEndTime = 0;
 
+        // Power shot mechanic
+        player.powerShotReady = true;
+        player.powerShotCooldown = 0;
+        player.chargingPowerShot = false;
+
         // Player name
         player.nameText = this.add.text(x, y - 35,
             isHuman ? 'YOU' : `Bot ${this.players.length}`, {
@@ -168,6 +173,13 @@ class GameScene extends Phaser.Scene {
                 yoyo: true,
                 repeat: -1
             });
+        }
+
+        // Power shot indicator (for human player)
+        if (isHuman) {
+            player.powerShotIndicator = this.add.circle(x, y, GAME_CONFIG.PLAYER_RADIUS + 8, 0xff0000, 0);
+            player.powerShotIndicator.setStrokeStyle(3, 0xff0000, 1);
+            player.powerShotIndicator.setVisible(false);
         }
 
         return player;
@@ -216,6 +228,15 @@ class GameScene extends Phaser.Scene {
             padding: { x: 10, y: 5 }
         }).setOrigin(1, 0);
 
+        // Power shot status indicator
+        this.powerShotStatusText = this.add.text(width - 20, 60, '', {
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color: '#ff0000',
+            backgroundColor: '#000000',
+            padding: { x: 10, y: 5 }
+        }).setOrigin(1, 0);
+
         this.updateUI();
     }
 
@@ -235,6 +256,10 @@ class GameScene extends Phaser.Scene {
             left: this.input.keyboard.addKey('A'),
             right: this.input.keyboard.addKey('D')
         };
+
+        // Power shot control (SPACE or SHIFT)
+        this.powerShotKey = this.input.keyboard.addKey('SPACE');
+        this.powerShotKeyAlt = this.input.keyboard.addKey('SHIFT');
 
         // Touch controls
         this.input.on('pointerdown', (pointer) => {
@@ -330,9 +355,38 @@ class GameScene extends Phaser.Scene {
                 player.setAlpha(1);
             }
 
+            // Update power shot cooldown
+            if (player.powerShotCooldown > 0) {
+                player.powerShotCooldown -= delta;
+                if (player.powerShotCooldown <= 0) {
+                    player.powerShotReady = true;
+                    player.powerShotCooldown = 0;
+                }
+            }
+
+            // Update power shot indicator (for human player)
+            if (player.isHuman && player.powerShotIndicator) {
+                player.powerShotIndicator.x = player.x;
+                player.powerShotIndicator.y = player.y;
+
+                if (player.chargingPowerShot) {
+                    // Pulsing animation when charging
+                    player.powerShotIndicator.setVisible(true);
+                    const pulse = Math.sin(Date.now() / 100) * 0.5 + 0.5;
+                    player.powerShotIndicator.setAlpha(pulse);
+                } else if (player.powerShotReady) {
+                    // Gently pulse when ready
+                    player.powerShotIndicator.setVisible(true);
+                    const pulse = Math.sin(Date.now() / 500) * 0.3 + 0.5;
+                    player.powerShotIndicator.setAlpha(pulse);
+                } else {
+                    player.powerShotIndicator.setVisible(false);
+                }
+            }
+
             // Human player control
             if (player.isHuman) {
-                this.updateHumanPlayer(player);
+                this.updateHumanPlayer(player, delta);
             } else {
                 // AI control
                 this.updateAIPlayer(player, time);
@@ -359,10 +413,17 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    updateHumanPlayer(player) {
+    updateHumanPlayer(player, delta) {
         if (player.frozen) {
             player.setAlpha(0.5);
             return;
+        }
+
+        // Power shot activation
+        if ((this.powerShotKey.isDown || this.powerShotKeyAlt.isDown) && player.powerShotReady) {
+            player.chargingPowerShot = true;
+        } else {
+            player.chargingPowerShot = false;
         }
 
         let vx = 0;
@@ -433,7 +494,28 @@ class GameScene extends Phaser.Scene {
 
         // Player hitting the ball
         if (player.body.velocity.length() > 50) {
-            const hitPower = GAME_CONFIG.HIT_POWER * (player.doubleBounce ? 1.5 : 1);
+            let hitPower = GAME_CONFIG.HIT_POWER;
+
+            // Apply power shot multiplier!
+            if (player.chargingPowerShot && player.powerShotReady) {
+                hitPower *= 2.5; // MEGA HIT!
+                player.powerShotReady = false;
+                player.powerShotCooldown = 3000; // 3 second cooldown
+                player.chargingPowerShot = false;
+
+                // Extra dramatic effect for power shot!
+                this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION * 3, 0.02);
+                this.particleSystem.createExplosion(this.ball.x, this.ball.y, 0xff0000, 30);
+            } else {
+                // Normal hit effects
+                this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION, 0.003);
+            }
+
+            // Apply double bounce powerup
+            if (player.doubleBounce) {
+                hitPower *= 1.5;
+            }
+
             const angle = Phaser.Math.Angle.Between(player.x, player.y, this.ball.x, this.ball.y);
 
             this.ball.body.setVelocity(
@@ -442,7 +524,6 @@ class GameScene extends Phaser.Scene {
             );
 
             // Visual feedback
-            this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION, 0.003);
             this.particleSystem.createHitEffect(this.ball.x, this.ball.y, player.fillColor);
 
             // Sound - disabled for now
@@ -467,16 +548,6 @@ class GameScene extends Phaser.Scene {
         this.particleSystem.createExplosion(player.x, player.y, player.fillColor, 40);
         this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION * 2, 0.01);
 
-        // Ragdoll effect (simple version)
-        this.tweens.add({
-            targets: player,
-            alpha: 0,
-            scale: 0.5,
-            angle: 360,
-            duration: 500,
-            ease: 'Power2'
-        });
-
         player.nameText.setColor('#ff0000');
         player.nameText.setText(player.isHuman ? 'ELIMINATED!' : 'OUT!');
 
@@ -485,10 +556,44 @@ class GameScene extends Phaser.Scene {
 
         // Check if human player
         if (player.isHuman) {
+            // Ragdoll effect for human
+            this.tweens.add({
+                targets: player,
+                alpha: 0,
+                scale: 0.5,
+                angle: 360,
+                duration: 500,
+                ease: 'Power2'
+            });
+
             this.time.delayedCall(1000, () => {
                 this.endGame(false);
             });
         } else {
+            // Move AI outside the arena to sit and watch!
+            const angle = Math.random() * Math.PI * 2;
+            const sitDistance = GAME_CONFIG.ARENA_RADIUS + 80;
+            const sitX = this.arena.centerX + Math.cos(angle) * sitDistance;
+            const sitY = this.arena.centerY + Math.sin(angle) * sitDistance;
+
+            // Animate to sitting position
+            this.tweens.add({
+                targets: player,
+                x: sitX,
+                y: sitY,
+                scale: 0.7,
+                alpha: 0.5,
+                duration: 800,
+                ease: 'Power2',
+                onUpdate: () => {
+                    player.nameText.x = player.x;
+                    player.nameText.y = player.y - 25;
+                }
+            });
+
+            // Add a sad emoji or indicator
+            player.nameText.setText('😢 OUT');
+
             // Award coins for elimination
             if (this.humanPlayer.isAlive) {
                 playerData.addCoins(GAME_CONFIG.COINS_PER_ELIMINATION);
@@ -590,6 +695,19 @@ class GameScene extends Phaser.Scene {
             this.powerupText.setText(`⚡ ${this.humanPlayer.activePowerup.toUpperCase()}: ${timeLeft.toFixed(1)}s`);
         } else {
             this.powerupText.setText('');
+        }
+
+        // Power shot status
+        if (this.humanPlayer.chargingPowerShot) {
+            this.powerShotStatusText.setText('🔥 POWER SHOT READY! 🔥');
+            this.powerShotStatusText.setColor('#ffff00');
+        } else if (this.humanPlayer.powerShotReady) {
+            this.powerShotStatusText.setText('💥 Hold SPACE for Power Shot');
+            this.powerShotStatusText.setColor('#ff6600');
+        } else {
+            const cooldownLeft = (this.humanPlayer.powerShotCooldown / 1000).toFixed(1);
+            this.powerShotStatusText.setText(`Power Shot: ${cooldownLeft}s`);
+            this.powerShotStatusText.setColor('#888888');
         }
     }
 

@@ -5,16 +5,16 @@ const GAME_CONFIG = {
     ARENA_RADIUS: 300,
     BALL_RADIUS: 12,
     PLAYER_RADIUS: 20,
-    MAX_AI_OPPONENTS: 7,
+    MAX_AI_OPPONENTS: 5, // Reduced from 7 - easier!
     ROUND_DURATION: 45, // seconds
 
     // Physics
-    BALL_SPEED: 400,
+    BALL_SPEED: 300, // Reduced from 400 - slower ball!
     BALL_DRAG: 0.98,
     BALL_BOUNCE: 0.95,
-    PLAYER_SPEED: 200,
+    PLAYER_SPEED: 220, // Increased from 200 - player faster!
     PLAYER_DRAG: 0.88,
-    HIT_POWER: 350,
+    HIT_POWER: 300, // Reduced from 350
 
     // Visual effects
     CAMERA_SHAKE_INTENSITY: 10,
@@ -24,7 +24,7 @@ const GAME_CONFIG = {
     SLOWMO_SCALE: 0.3,
 
     // Gameplay
-    INVULNERABILITY_TIME: 1500, // after spawn
+    INVULNERABILITY_TIME: 2500, // Increased from 1500 - more protection!
     POWERUP_SPAWN_INTERVAL: 15000,
     POWERUP_DURATION: 5000,
 
@@ -34,12 +34,12 @@ const GAME_CONFIG = {
     COINS_PER_SURVIVAL: 10,
     DAILY_REWARD_BASE: 50,
 
-    // AI difficulty levels
+    // AI difficulty levels (made easier!)
     AI_DIFFICULTIES: {
-        EASY: { reactionTime: 800, accuracy: 0.4, aggression: 0.3 },
-        MEDIUM: { reactionTime: 500, accuracy: 0.6, aggression: 0.5 },
-        HARD: { reactionTime: 300, accuracy: 0.8, aggression: 0.7 },
-        EXPERT: { reactionTime: 150, accuracy: 0.9, aggression: 0.85 }
+        EASY: { reactionTime: 1000, accuracy: 0.3, aggression: 0.2 },
+        MEDIUM: { reactionTime: 700, accuracy: 0.5, aggression: 0.4 },
+        HARD: { reactionTime: 500, accuracy: 0.7, aggression: 0.6 },
+        EXPERT: { reactionTime: 300, accuracy: 0.8, aggression: 0.75 }
     },
 
     // Colors

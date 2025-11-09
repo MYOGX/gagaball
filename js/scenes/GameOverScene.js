@@ -151,6 +151,33 @@ class GameOverScene extends Phaser.Scene {
         if (this.won) {
             this.createConfetti();
         }
+
+        // Simple restart - press any key or click anywhere
+        this.input.keyboard.on('keydown', () => {
+            this.scene.start('GameScene');
+        });
+
+        this.input.on('pointerdown', () => {
+            this.scene.start('GameScene');
+        });
+
+        // Show instruction
+        const restartText = this.add.text(centerX, height - 50,
+            'Press ANY KEY or CLICK to Play Again!', {
+            fontSize: '18px',
+            color: '#fbbf24',
+            fontStyle: 'bold',
+            backgroundColor: '#000000',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: restartText,
+            alpha: { from: 1, to: 0.3 },
+            duration: 800,
+            yoyo: true,
+            repeat: -1
+        });
     }
 
     calculateRewards() {
