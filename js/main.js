@@ -4,6 +4,7 @@ console.log('Initializing GaGa Ball game...');
 // Check if all scenes are defined
 console.log('BootScene:', typeof BootScene);
 console.log('MenuScene:', typeof MenuScene);
+console.log('LobbyScene:', typeof LobbyScene);
 console.log('GameScene:', typeof GameScene);
 console.log('GameOverScene:', typeof GameOverScene);
 
@@ -27,7 +28,7 @@ const phaserConfig = {
         width: 800,
         height: 600
     },
-    scene: [BootScene, MenuScene, GameScene, GameOverScene],
+    scene: [BootScene, MenuScene, LobbyScene, GameScene, GameOverScene],
     audio: {
         noAudio: true
     },
