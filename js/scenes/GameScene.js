@@ -169,35 +169,113 @@ class GameScene extends Phaser.Scene {
     createArena() {
         const arena = this.currentArena || ARENAS.classic;
 
-        // Background
+        // Playground grass background
         this.add.rectangle(0, 0, this.cameras.main.width, this.cameras.main.height,
-            arena.bgColor).setOrigin(0, 0);
+            0x4a7c59).setOrigin(0, 0); // Darker grass green
 
         // Arena graphics
         this.arenaGraphics = this.add.graphics();
 
-        // Outer glow
-        this.arenaGraphics.fillStyle(arena.borderColor, 0.2);
-        this.arenaGraphics.fillCircle(this.centerX, this.centerY, GAME_CONFIG.ARENA_RADIUS + 20);
+        // Wooden octagon border (like real gaga ball pits)
+        const numSides = 8;
+        const borderRadius = GAME_CONFIG.ARENA_RADIUS + 15;
+        this.arenaGraphics.fillStyle(0x8b6f47, 1); // Brown wood color
+        this.arenaGraphics.beginPath();
+        for (let i = 0; i < numSides; i++) {
+            const angle = (Math.PI * 2 * i) / numSides - Math.PI / 2;
+            const x = this.centerX + Math.cos(angle) * borderRadius;
+            const y = this.centerY + Math.sin(angle) * borderRadius;
+            if (i === 0) {
+                this.arenaGraphics.moveTo(x, y);
+            } else {
+                this.arenaGraphics.lineTo(x, y);
+            }
+        }
+        this.arenaGraphics.closePath();
+        this.arenaGraphics.fillPath();
 
-        // Main arena
-        this.arenaGraphics.fillStyle(GAME_CONFIG.COLORS.ARENA, 0.5);
+        // Sand pit (tan color)
+        this.arenaGraphics.fillStyle(0xddb892, 1); // Sandy tan color
         this.arenaGraphics.fillCircle(this.centerX, this.centerY, GAME_CONFIG.ARENA_RADIUS);
 
-        // Border
-        this.arenaGraphics.lineStyle(8, arena.borderColor, 1);
-        this.arenaGraphics.strokeCircle(this.centerX, this.centerY, GAME_CONFIG.ARENA_RADIUS);
-
-        // Inner decoration rings
-        for (let i = 1; i <= 3; i++) {
-            this.arenaGraphics.lineStyle(2, arena.borderColor, 0.3);
-            this.arenaGraphics.strokeCircle(this.centerX, this.centerY,
-                GAME_CONFIG.ARENA_RADIUS * (i * 0.25));
+        // Add sand texture (random dots)
+        for (let i = 0; i < 100; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * GAME_CONFIG.ARENA_RADIUS;
+            const x = this.centerX + Math.cos(angle) * distance;
+            const y = this.centerY + Math.sin(angle) * distance;
+            const size = Math.random() * 2 + 1;
+            const shade = Math.random() > 0.5 ? 0xc9a876 : 0xe8d4b8;
+            this.arenaGraphics.fillStyle(shade, 0.3);
+            this.arenaGraphics.fillCircle(x, y, size);
         }
 
-        // Center dot
-        this.arenaGraphics.fillStyle(arena.borderColor, 0.8);
-        this.arenaGraphics.fillCircle(this.centerX, this.centerY, 5);
+        // Wood plank border segments
+        for (let i = 0; i < numSides; i++) {
+            const angle1 = (Math.PI * 2 * i) / numSides - Math.PI / 2;
+            const angle2 = (Math.PI * 2 * (i + 1)) / numSides - Math.PI / 2;
+
+            const x1 = this.centerX + Math.cos(angle1) * GAME_CONFIG.ARENA_RADIUS;
+            const y1 = this.centerY + Math.sin(angle1) * GAME_CONFIG.ARENA_RADIUS;
+            const x2 = this.centerX + Math.cos(angle2) * GAME_CONFIG.ARENA_RADIUS;
+            const y2 = this.centerY + Math.sin(angle2) * GAME_CONFIG.ARENA_RADIUS;
+
+            this.arenaGraphics.lineStyle(12, 0x6b5638, 1); // Dark wood
+            this.arenaGraphics.lineBetween(x1, y1, x2, y2);
+
+            // Wood grain highlights
+            this.arenaGraphics.lineStyle(2, 0x9d825f, 0.5);
+            this.arenaGraphics.lineBetween(x1, y1, x2, y2);
+        }
+
+        // Center circle (worn spot in sand)
+        this.arenaGraphics.fillStyle(0xc9a876, 0.5);
+        this.arenaGraphics.fillCircle(this.centerX, this.centerY, 25);
+        this.arenaGraphics.lineStyle(2, 0xb89968, 0.5);
+        this.arenaGraphics.strokeCircle(this.centerX, this.centerY, 25);
+
+        // School sign - "L.S.E"
+        const signX = this.centerX;
+        const signY = 50;
+
+        // Sign post
+        this.arenaGraphics.fillStyle(0x8b6f47, 1);
+        this.arenaGraphics.fillRect(signX - 3, signY, 6, 40);
+
+        // Sign board (rectangular, like school signs)
+        const signWidth = 140;
+        const signHeight = 50;
+        this.arenaGraphics.fillStyle(0x2c5f2d, 1); // Dark green (school colors)
+        this.arenaGraphics.fillRoundedRect(signX - signWidth/2, signY - signHeight/2, signWidth, signHeight, 5);
+
+        // Sign border
+        this.arenaGraphics.lineStyle(3, 0x1a3d1b, 1);
+        this.arenaGraphics.strokeRoundedRect(signX - signWidth/2, signY - signHeight/2, signWidth, signHeight, 5);
+
+        // "L.S.E" text on sign
+        this.add.text(signX, signY, 'L.S.E', {
+            fontSize: '32px',
+            fontStyle: 'bold',
+            color: '#ffffff',
+            fontFamily: 'Arial, sans-serif',
+            stroke: '#1a3d1b',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+
+        // Add grass tufts around the pit
+        for (let i = 0; i < 15; i++) {
+            const angle = (Math.PI * 2 * i) / 15;
+            const distance = GAME_CONFIG.ARENA_RADIUS + 50 + Math.random() * 30;
+            const x = this.centerX + Math.cos(angle) * distance;
+            const y = this.centerY + Math.sin(angle) * distance;
+
+            // Grass tuft
+            this.arenaGraphics.fillStyle(0x5a9c6e, 0.7);
+            this.arenaGraphics.fillCircle(x, y, 8);
+            this.arenaGraphics.fillStyle(0x6bb583, 0.7);
+            this.arenaGraphics.fillCircle(x - 3, y - 2, 6);
+            this.arenaGraphics.fillCircle(x + 3, y - 2, 6);
+        }
 
         this.arena = {
             centerX: this.centerX,
