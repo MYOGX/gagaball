@@ -65,13 +65,14 @@ document.addEventListener('gesturestart', (e) => {
 });
 
 // Handle visibility changes (pause when tab not active)
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        game.sound.pauseAll();
-    } else {
-        game.sound.resumeAll();
-    }
-});
+// Disabled for now - audio system not implemented
+// document.addEventListener('visibilitychange', () => {
+//     if (document.hidden) {
+//         game.sound.pauseAll();
+//     } else {
+//         game.sound.resumeAll();
+//     }
+// });
 
 // Console welcome message
 console.log(`
