@@ -1,4 +1,5 @@
 // Game configuration constants
+console.log('Loading config.js...');
 const GAME_CONFIG = {
     // Game settings
     ARENA_RADIUS: 300,

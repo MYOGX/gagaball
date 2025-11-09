@@ -2,11 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="GaGa Ball - The most addictive pit game ever! Can you survive 30 seconds?">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>GaGa Ball - #1 Pit Boss Challenge</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script>
+        // Early error detection
+        console.log('HTML loaded, scripts will load next...');
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.innerHTML = '<h1>⚠️ Error</h1><p>' + e.message + '</p><p>File: ' + e.filename + '</p><p>Line: ' + e.lineno + '</p>';
+            }
+        });
+
+        // Fallback: hide loading screen after 5 seconds if game hasn't started
+        setTimeout(function() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                console.warn('Game did not start within 5 seconds, hiding loading screen');
+                loadingScreen.style.display = 'none';
+            }
+        }, 5000);
+    </script>
 </head>
 <body>
     <div id="game-container">
@@ -16,15 +39,19 @@
             <div class="loader"></div>
         </div>
     </div>
-    <script src="js/config.js"></script>
-    <script src="js/playerData.js"></script>
-    <script src="js/powerups.js"></script>
-    <script src="js/particles.js"></script>
-    <script src="js/ai.js"></script>
-    <script src="js/scenes/BootScene.js"></script>
-    <script src="js/scenes/MenuScene.js"></script>
-    <script src="js/scenes/GameScene.js"></script>
-    <script src="js/scenes/GameOverScene.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/config.js?cachebust=20241109v4"></script>
+    <script src="js/playerData.js?cachebust=20241109v4"></script>
+    <script src="js/powerups.js?cachebust=20241109v4"></script>
+    <script src="js/particles.js?cachebust=20241109v4"></script>
+    <script src="js/ai.js?cachebust=20241109v4"></script>
+    <script src="js/scenes/BootScene.js?cachebust=20241109v4"></script>
+    <script src="js/scenes/MenuScene.js?cachebust=20241109v4"></script>
+    <script src="js/scenes/GameScene.js?cachebust=20241109v4"></script>
+    <script src="js/scenes/GameOverScene.js?cachebust=20241109v4"></script>
+    <script src="js/main.js?cachebust=20241109v4"></script>
+    <script>
+        console.log('✅ VERSION 20241109v4 LOADED - All scripts loaded successfully!');
+        console.log('🔇 Audio should be DISABLED. If you see "Web Audio" above, cache is the problem.');
+    </script>
 </body>
 </html>

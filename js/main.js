@@ -1,4 +1,12 @@
 // Main Phaser game configuration
+console.log('Initializing GaGa Ball game...');
+
+// Check if all scenes are defined
+console.log('BootScene:', typeof BootScene);
+console.log('MenuScene:', typeof MenuScene);
+console.log('GameScene:', typeof GameScene);
+console.log('GameOverScene:', typeof GameOverScene);
+
 const phaserConfig = {
     type: Phaser.AUTO,
     parent: 'game-container',
@@ -21,12 +29,30 @@ const phaserConfig = {
     },
     scene: [BootScene, MenuScene, GameScene, GameOverScene],
     audio: {
-        disableWebAudio: false
+        noAudio: true
+    },
+    callbacks: {
+        preBoot: function (game) {
+            console.log('Phaser preBoot callback');
+        },
+        postBoot: function (game) {
+            console.log('Phaser postBoot callback - game started successfully');
+        }
     }
 };
 
 // Initialize the game
-const game = new Phaser.Game(phaserConfig);
+try {
+    const game = new Phaser.Game(phaserConfig);
+    console.log('Phaser game instance created:', game);
+} catch (error) {
+    console.error('Error creating Phaser game:', error);
+    // Hide loading screen on error
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.innerHTML = '<h1>⚠️ Error Loading Game</h1><p>' + error.message + '</p><p>Check console for details</p>';
+    }
+}
 
 // Prevent default touch behaviors
 document.addEventListener('touchmove', (e) => {
@@ -39,13 +65,14 @@ document.addEventListener('gesturestart', (e) => {
 });
 
 // Handle visibility changes (pause when tab not active)
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        game.sound.pauseAll();
-    } else {
-        game.sound.resumeAll();
-    }
-});
+// Disabled for now - audio system not implemented
+// document.addEventListener('visibilitychange', () => {
+//     if (document.hidden) {
+//         game.sound.pauseAll();
+//     } else {
+//         game.sound.resumeAll();
+//     }
+// });
 
 // Console welcome message
 console.log(`

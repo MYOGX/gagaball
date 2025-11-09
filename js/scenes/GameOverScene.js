@@ -1,4 +1,5 @@
 // Game Over scene - results and rewards
+console.log('Loading GameOverScene.js...');
 class GameOverScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameOverScene' });
@@ -143,12 +144,8 @@ class GameOverScene extends Phaser.Scene {
             ease: 'Bounce.easeOut'
         });
 
-        // Play sound
-        if (this.won && this.sound.get('win')) {
-            this.sound.play('win', { volume: 0.7 });
-        } else if (!this.won && this.sound.get('lose')) {
-            this.sound.play('lose', { volume: 0.5 });
-        }
+        // Sound - disabled for now
+        // (Add audio files in preload to enable)
 
         // Confetti for wins
         if (this.won) {

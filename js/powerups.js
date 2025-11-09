@@ -158,10 +158,8 @@ class PowerUp {
         // Apply power-up effect
         this.applyEffect(player);
 
-        // Play sound
-        if (this.scene.sound.get('powerup')) {
-            this.scene.sound.play('powerup', { volume: 0.5 });
-        }
+        // Sound - disabled for now
+        // (Add audio files in preload to enable)
     }
 
     applyEffect(player) {

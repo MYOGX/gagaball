@@ -1,4 +1,5 @@
 // Player data management with localStorage
+console.log('Loading playerData.js...');
 class PlayerDataManager {
     constructor() {
         this.data = this.loadData();
@@ -208,4 +209,6 @@ class PlayerDataManager {
 }
 
 // Global instance
+console.log('Creating playerData instance...');
 const playerData = new PlayerDataManager();
+console.log('playerData created successfully:', playerData);
