@@ -5,23 +5,35 @@ class BootScene extends Phaser.Scene {
     }
 
     preload() {
+        console.log('BootScene: preload started');
         // Create procedural sounds (simple beeps for now - can be replaced with real audio files)
-        this.createSounds();
+        // Commenting out for now as they may cause issues
+        // this.createSounds();
     }
 
     create() {
+        console.log('BootScene: create started');
+
         // Hide loading screen
         const loadingScreen = document.getElementById('loading-screen');
+        console.log('Loading screen element:', loadingScreen);
+
         if (loadingScreen) {
             setTimeout(() => {
+                console.log('Hiding loading screen');
                 loadingScreen.style.display = 'none';
-            }, 500);
+            }, 100);
         }
 
         // Check for daily reward availability
-        this.checkDailyReward();
+        try {
+            this.checkDailyReward();
+        } catch (e) {
+            console.error('Error checking daily reward:', e);
+        }
 
         // Start menu
+        console.log('Starting MenuScene');
         this.scene.start('MenuScene');
     }
 
