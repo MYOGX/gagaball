@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>GaGa Ball - FIXED VERSION</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <div id="loading-screen">
+            <h1>⚡ GAGA BALL ⚡</h1>
+            <p>Loading the pit...</p>
+            <div class="loader"></div>
+        </div>
+    </div>
+
+    <!-- Load scripts with unique cache-busting timestamps -->
+    <script src="js/config.js?noaudio=true&v=999"></script>
+    <script src="js/playerData.js?noaudio=true&v=999"></script>
+    <script src="js/powerups.js?noaudio=true&v=999"></script>
+    <script src="js/particles.js?noaudio=true&v=999"></script>
+    <script src="js/ai.js?noaudio=true&v=999"></script>
+    <script src="js/scenes/BootScene.js?noaudio=true&v=999"></script>
+    <script src="js/scenes/MenuScene.js?noaudio=true&v=999"></script>
+    <script src="js/scenes/GameScene.js?noaudio=true&v=999"></script>
+    <script src="js/scenes/GameOverScene.js?noaudio=true&v=999"></script>
+    <script src="js/main.js?noaudio=true&v=999"></script>
+
+    <script>
+        console.log('%c🎉 FRESH VERSION LOADED - NO CACHE!', 'background: green; color: white; font-size: 20px; padding: 10px;');
+        console.log('If you see "Web Audio" above, this page is also cached. Try a different browser.');
+
+        // Auto-hide loading screen after 3 seconds
+        setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                console.warn('Auto-hiding loading screen');
+                loadingScreen.style.display = 'none';
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
