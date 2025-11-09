@@ -7,23 +7,17 @@ class BootScene extends Phaser.Scene {
     preload() {
         // Create procedural sounds (simple beeps for now - can be replaced with real audio files)
         this.createSounds();
-
-        // Loading progress
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            loadingScreen.style.display = 'flex';
-        }
-
-        this.load.on('complete', () => {
-            if (loadingScreen) {
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 500);
-            }
-        });
     }
 
     create() {
+        // Hide loading screen
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
+        }
+
         // Check for daily reward availability
         this.checkDailyReward();
 
