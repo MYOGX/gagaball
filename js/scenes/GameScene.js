@@ -290,9 +290,10 @@ class GameScene extends Phaser.Scene {
 
         this.physics.add.existing(this.ball);
         this.ball.body.setCircle(GAME_CONFIG.BALL_RADIUS);
-        this.ball.body.setBounce(GAME_CONFIG.BALL_BOUNCE);
-        this.ball.body.setDrag(GAME_CONFIG.BALL_DRAG);
-        this.ball.body.setMaxSpeed(600);
+        this.ball.body.setBounce(1.0); // Perfect bounce to prevent energy loss
+        this.ball.body.setDrag(20); // Very low drag so ball keeps moving
+        this.ball.body.setMaxSpeed(700);
+        this.ball.body.setFriction(0); // No friction
 
         // Ball glow
         this.ballGlow = this.add.circle(this.centerX, this.centerY,
@@ -308,6 +309,9 @@ class GameScene extends Phaser.Scene {
 
         // Ball trail effect
         this.ballTrailGraphics = this.add.graphics();
+
+        // Track last bounce time to prevent sticking
+        this.ball.lastBounceTime = 0;
     }
 
     createPlayers() {
@@ -356,10 +360,12 @@ class GameScene extends Phaser.Scene {
         player.frozen = false;
         player.frozenEndTime = 0;
 
-        // Power shot mechanic
-        player.powerShotReady = true;
-        player.powerShotCooldown = 0;
-        player.chargingPowerShot = false;
+        // Timing-based hit mechanic
+        player.hitTimingReady = false;
+        player.hitTimingWindow = null; // Will be set when near ball
+        player.timingBarWidth = 0; // For visual feedback
+        player.lastHitTime = 0;
+        player.hitCooldown = 500; // ms between hits
 
         // Player name
         player.nameText = this.add.text(x, y - 35,
@@ -384,11 +390,20 @@ class GameScene extends Phaser.Scene {
             });
         }
 
-        // Power shot indicator (for human player)
+        // Timing indicator (for human player)
         if (isHuman) {
-            player.powerShotIndicator = this.add.circle(x, y, GAME_CONFIG.PLAYER_RADIUS + 8, 0xff0000, 0);
-            player.powerShotIndicator.setStrokeStyle(3, 0xff0000, 1);
-            player.powerShotIndicator.setVisible(false);
+            // Timing bar background
+            player.timingBarBg = this.add.rectangle(x, y - 45, 60, 8, 0x333333, 0.8);
+            player.timingBarBg.setVisible(false);
+
+            // Timing bar fill (grows as you get closer to ball)
+            player.timingBar = this.add.rectangle(x - 30, y - 45, 0, 6, 0x00ff00, 1);
+            player.timingBar.setOrigin(0, 0.5);
+            player.timingBar.setVisible(false);
+
+            // Perfect timing zone indicator
+            player.perfectZone = this.add.rectangle(x + 10, y - 45, 12, 8, 0x00ff00, 0.5);
+            player.perfectZone.setVisible(false);
         }
 
         return player;
@@ -597,35 +612,6 @@ class GameScene extends Phaser.Scene {
                 player.setAlpha(1);
             }
 
-            // Update power shot cooldown
-            if (player.powerShotCooldown > 0) {
-                player.powerShotCooldown -= delta;
-                if (player.powerShotCooldown <= 0) {
-                    player.powerShotReady = true;
-                    player.powerShotCooldown = 0;
-                }
-            }
-
-            // Update power shot indicator (for human player)
-            if (player.isHuman && player.powerShotIndicator) {
-                player.powerShotIndicator.x = player.x;
-                player.powerShotIndicator.y = player.y;
-
-                if (player.chargingPowerShot) {
-                    // Pulsing animation when charging
-                    player.powerShotIndicator.setVisible(true);
-                    const pulse = Math.sin(Date.now() / 100) * 0.5 + 0.5;
-                    player.powerShotIndicator.setAlpha(pulse);
-                } else if (player.powerShotReady) {
-                    // Gently pulse when ready
-                    player.powerShotIndicator.setVisible(true);
-                    const pulse = Math.sin(Date.now() / 500) * 0.3 + 0.5;
-                    player.powerShotIndicator.setAlpha(pulse);
-                } else {
-                    player.powerShotIndicator.setVisible(false);
-                }
-            }
-
             // Human player control
             if (player.isHuman && !player.isRemote) {
                 // Only control local human player
@@ -663,11 +649,53 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
-        // Power shot activation
-        if ((this.powerShotKey.isDown || this.powerShotKeyAlt.isDown) && player.powerShotReady) {
-            player.chargingPowerShot = true;
+        // Calculate distance to ball for timing indicator
+        const distToBall = Phaser.Math.Distance.Between(player.x, player.y, this.ball.x, this.ball.y);
+        const hitRange = 100; // Show timing bar when within this distance
+
+        // Update timing bar visuals
+        if (distToBall < hitRange) {
+            const optimalDistance = GAME_CONFIG.PLAYER_RADIUS + GAME_CONFIG.BALL_RADIUS + 5;
+            const progress = 1 - (Math.abs(distToBall - optimalDistance) / hitRange);
+
+            player.timingBarBg.setVisible(true);
+            player.timingBar.setVisible(true);
+            player.perfectZone.setVisible(true);
+
+            // Update bar width (0-60 pixels)
+            const barWidth = Math.max(0, Math.min(60, progress * 60));
+            player.timingBar.width = barWidth;
+
+            // Color based on timing quality
+            if (Math.abs(distToBall - optimalDistance) < 15) {
+                player.timingBar.setFillStyle(0x00ff00); // Green = perfect!
+            } else if (Math.abs(distToBall - optimalDistance) < 30) {
+                player.timingBar.setFillStyle(0xff8800); // Orange = good
+            } else {
+                player.timingBar.setFillStyle(0xffff00); // Yellow = okay
+            }
+
+            // Timing hit attempt - press space when near ball
+            if (Phaser.Input.Keyboard.JustDown(this.powerShotKey) ||
+                Phaser.Input.Keyboard.JustDown(this.powerShotKeyAlt)) {
+                player.attemptedTimingHit = true;
+            }
         } else {
-            player.chargingPowerShot = false;
+            // Too far from ball - hide timing bar
+            player.timingBarBg.setVisible(false);
+            player.timingBar.setVisible(false);
+            player.perfectZone.setVisible(false);
+            player.attemptedTimingHit = false;
+        }
+
+        // Update timing bar position to follow player
+        if (player.timingBarBg) {
+            player.timingBarBg.x = player.x;
+            player.timingBarBg.y = player.y - 45;
+            player.timingBar.x = player.x - 30;
+            player.timingBar.y = player.y - 45;
+            player.perfectZone.x = player.x + 10;
+            player.perfectZone.y = player.y - 45;
         }
 
         let vx = 0;
@@ -733,27 +761,67 @@ class GameScene extends Phaser.Scene {
     }
 
     handleBallPlayerCollision(player) {
-        // Check if hit below knees (simplified - just check if ball hit player)
         const now = Date.now();
+
+        // Check cooldown
+        if (now - player.lastHitTime < player.hitCooldown) {
+            return; // Still in cooldown
+        }
 
         // Player hitting the ball
         if (player.body.velocity.length() > 50) {
             let hitPower = GAME_CONFIG.HIT_POWER;
+            let timingMultiplier = 1.0;
 
-            // Apply power shot multiplier!
-            if (player.chargingPowerShot && player.powerShotReady) {
-                hitPower *= 2.5; // MEGA HIT!
-                player.powerShotReady = false;
-                player.powerShotCooldown = 3000; // 3 second cooldown
-                player.chargingPowerShot = false;
+            // Check if player pressed space (timing hit)
+            if (player.isHuman && player.attemptedTimingHit) {
+                // Calculate timing quality based on distance to ball
+                const distToBall = Phaser.Math.Distance.Between(player.x, player.y, this.ball.x, this.ball.y);
+                const optimalDistance = GAME_CONFIG.PLAYER_RADIUS + GAME_CONFIG.BALL_RADIUS + 5;
 
-                // Extra dramatic effect for power shot!
-                this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION * 3, 0.02);
-                this.particleSystem.createExplosion(this.ball.x, this.ball.y, 0xff0000, 30);
+                // Perfect timing window (within 15 pixels of optimal)
+                if (Math.abs(distToBall - optimalDistance) < 15) {
+                    timingMultiplier = 2.5; // PERFECT HIT!
+                    this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION * 3, 0.02);
+                    this.particleSystem.createExplosion(this.ball.x, this.ball.y, 0x00ff00, 40);
+
+                    // Show "PERFECT!" text
+                    const perfectText = this.add.text(this.ball.x, this.ball.y - 40, 'PERFECT!', {
+                        fontSize: '24px',
+                        fontStyle: 'bold',
+                        color: '#00ff00',
+                        stroke: '#000000',
+                        strokeThickness: 4
+                    }).setOrigin(0.5);
+
+                    this.tweens.add({
+                        targets: perfectText,
+                        y: this.ball.y - 80,
+                        alpha: 0,
+                        duration: 800,
+                        ease: 'Power2',
+                        onComplete: () => perfectText.destroy()
+                    });
+                }
+                // Good timing (within 30 pixels)
+                else if (Math.abs(distToBall - optimalDistance) < 30) {
+                    timingMultiplier = 1.7; // GOOD HIT!
+                    this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION * 2, 0.01);
+                    this.particleSystem.createExplosion(this.ball.x, this.ball.y, 0xff8800, 25);
+                }
+                // Weak timing
+                else {
+                    timingMultiplier = 1.2; // Slight boost for trying
+                    this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION, 0.005);
+                }
+
+                player.attemptedTimingHit = false; // Reset
             } else {
-                // Normal hit effects
+                // No timing attempt - normal hit
                 this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION, 0.003);
             }
+
+            hitPower *= timingMultiplier;
 
             // Apply double bounce powerup
             if (player.doubleBounce) {
@@ -770,8 +838,7 @@ class GameScene extends Phaser.Scene {
             // Visual feedback
             this.particleSystem.createHitEffect(this.ball.x, this.ball.y, player.fillColor);
 
-            // Sound - disabled for now
-            // (Add audio files in preload to enable)
+            player.lastHitTime = now;
         }
         // Ball hitting player (elimination check)
         else if (this.ball.body.velocity.length() > 150) {
@@ -901,24 +968,60 @@ class GameScene extends Phaser.Scene {
         const dx = this.ball.x - this.arena.centerX;
         const dy = this.ball.y - this.arena.centerY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const maxDist = this.arena.radius - GAME_CONFIG.BALL_RADIUS;
+        const maxDist = this.arena.radius - GAME_CONFIG.BALL_RADIUS - 2; // Extra padding to prevent sticking
 
         if (dist > maxDist) {
             const angle = Math.atan2(dy, dx);
-            this.ball.x = this.arena.centerX + Math.cos(angle) * maxDist;
-            this.ball.y = this.arena.centerY + Math.sin(angle) * maxDist;
 
-            // Bounce off wall
+            // Push ball away from wall slightly
+            this.ball.x = this.arena.centerX + Math.cos(angle) * (maxDist - 5);
+            this.ball.y = this.arena.centerY + Math.sin(angle) * (maxDist - 5);
+
+            // Calculate reflection angle
             const normalX = -Math.cos(angle);
             const normalY = -Math.sin(angle);
             const dot = this.ball.body.velocity.x * normalX + this.ball.body.velocity.y * normalY;
 
-            this.ball.body.velocity.x = (this.ball.body.velocity.x - 2 * dot * normalX) * 0.9;
-            this.ball.body.velocity.y = (this.ball.body.velocity.y - 2 * dot * normalY) * 0.9;
+            // Better bounce physics - maintain energy better
+            this.ball.body.velocity.x = (this.ball.body.velocity.x - 2 * dot * normalX) * 0.95;
+            this.ball.body.velocity.y = (this.ball.body.velocity.y - 2 * dot * normalY) * 0.95;
+
+            // Ensure ball doesn't get stuck - add minimum velocity
+            const currentSpeed = this.ball.body.velocity.length();
+            if (currentSpeed < 150) {
+                // Give it a nudge toward center with some random angle
+                const nudgeAngle = angle + Math.PI + (Math.random() - 0.5) * 0.5;
+                this.ball.body.setVelocity(
+                    Math.cos(nudgeAngle) * 200,
+                    Math.sin(nudgeAngle) * 200
+                );
+            }
 
             // Effect
             this.cameras.main.shake(100, 0.005);
             this.particleSystem.createHitEffect(this.ball.x, this.ball.y, GAME_CONFIG.COLORS.ARENA_BORDER);
+
+            this.ball.lastBounceTime = Date.now();
+        }
+
+        // Anti-stuck mechanism - if ball is moving too slowly near edges, give it a boost
+        const speed = this.ball.body.velocity.length();
+        if (speed < 100 && dist > maxDist * 0.7) {
+            // Ball is slow and near edge - push it toward center
+            const pushAngle = Math.atan2(-dy, -dx) + (Math.random() - 0.5) * 1;
+            this.ball.body.setVelocity(
+                Math.cos(pushAngle) * 180,
+                Math.sin(pushAngle) * 180
+            );
+        }
+
+        // Ensure ball always has minimum velocity to keep game moving
+        if (speed < 80) {
+            const currentAngle = Math.atan2(this.ball.body.velocity.y, this.ball.body.velocity.x);
+            this.ball.body.setVelocity(
+                Math.cos(currentAngle) * 150,
+                Math.sin(currentAngle) * 150
+            );
         }
     }
 
@@ -968,17 +1071,25 @@ class GameScene extends Phaser.Scene {
             this.powerupText.setText('');
         }
 
-        // Power shot status
-        if (this.humanPlayer.chargingPowerShot) {
-            this.powerShotStatusText.setText('🔥 POWER SHOT READY! 🔥');
-            this.powerShotStatusText.setColor('#ffff00');
-        } else if (this.humanPlayer.powerShotReady) {
-            this.powerShotStatusText.setText('💥 Hold SPACE for Power Shot');
-            this.powerShotStatusText.setColor('#ff6600');
+        // Timing hit status
+        const distToBall = Phaser.Math.Distance.Between(
+            this.humanPlayer.x, this.humanPlayer.y,
+            this.ball.x, this.ball.y
+        );
+
+        if (distToBall < 100) {
+            const timeSinceHit = Date.now() - this.humanPlayer.lastHitTime;
+            if (timeSinceHit < this.humanPlayer.hitCooldown) {
+                const cooldownLeft = ((this.humanPlayer.hitCooldown - timeSinceHit) / 1000).toFixed(1);
+                this.powerShotStatusText.setText(`Cooldown: ${cooldownLeft}s`);
+                this.powerShotStatusText.setColor('#888888');
+            } else {
+                this.powerShotStatusText.setText('⚡ Press SPACE to HIT! ⚡');
+                this.powerShotStatusText.setColor('#00ff00');
+            }
         } else {
-            const cooldownLeft = (this.humanPlayer.powerShotCooldown / 1000).toFixed(1);
-            this.powerShotStatusText.setText(`Power Shot: ${cooldownLeft}s`);
-            this.powerShotStatusText.setColor('#888888');
+            this.powerShotStatusText.setText('💫 Get close to the ball!');
+            this.powerShotStatusText.setColor('#ffffff');
         }
     }
 
