@@ -27,6 +27,7 @@ class GameScene extends Phaser.Scene {
         this.createArena();
         this.createBall();
         this.createPlayers();
+        this.retargetBall(); // Initial targeting after players are created
         this.createUI();
         this.setupPhysics();
         this.setupControls();
@@ -307,9 +308,6 @@ class GameScene extends Phaser.Scene {
         this.ball.currentSpeed = GAME_CONFIG.BALL_SPEED;
         this.ball.speedMultiplier = 1.0;
         this.ball.hitCount = 0; // Tracks hits to increase speed
-
-        // Initial ball velocity - target random player
-        this.retargetBall();
 
         // Ball trail effect
         this.ballTrailGraphics = this.add.graphics();
