@@ -402,7 +402,7 @@ class GameScene extends Phaser.Scene {
             player.timingBar.setVisible(false);
 
             // Perfect timing zone indicator
-            player.perfectZone = this.add.rectangle(x + 10, y - 45, 12, 8, 0xffff00, 0.5);
+            player.perfectZone = this.add.rectangle(x + 10, y - 45, 12, 8, 0x00ff00, 0.5);
             player.perfectZone.setVisible(false);
         }
 
@@ -668,11 +668,11 @@ class GameScene extends Phaser.Scene {
 
             // Color based on timing quality
             if (Math.abs(distToBall - optimalDistance) < 15) {
-                player.timingBar.setFillStyle(0xffff00); // Yellow = perfect
+                player.timingBar.setFillStyle(0x00ff00); // Green = perfect!
             } else if (Math.abs(distToBall - optimalDistance) < 30) {
                 player.timingBar.setFillStyle(0xff8800); // Orange = good
             } else {
-                player.timingBar.setFillStyle(0x00ff00); // Green = ok
+                player.timingBar.setFillStyle(0xffff00); // Yellow = okay
             }
 
             // Timing hit attempt - press space when near ball
@@ -783,13 +783,13 @@ class GameScene extends Phaser.Scene {
                 if (Math.abs(distToBall - optimalDistance) < 15) {
                     timingMultiplier = 2.5; // PERFECT HIT!
                     this.cameras.main.shake(GAME_CONFIG.CAMERA_SHAKE_DURATION * 3, 0.02);
-                    this.particleSystem.createExplosion(this.ball.x, this.ball.y, 0xffff00, 40);
+                    this.particleSystem.createExplosion(this.ball.x, this.ball.y, 0x00ff00, 40);
 
                     // Show "PERFECT!" text
                     const perfectText = this.add.text(this.ball.x, this.ball.y - 40, 'PERFECT!', {
                         fontSize: '24px',
                         fontStyle: 'bold',
-                        color: '#ffff00',
+                        color: '#00ff00',
                         stroke: '#000000',
                         strokeThickness: 4
                     }).setOrigin(0.5);
@@ -1085,7 +1085,7 @@ class GameScene extends Phaser.Scene {
                 this.powerShotStatusText.setColor('#888888');
             } else {
                 this.powerShotStatusText.setText('⚡ Press SPACE to HIT! ⚡');
-                this.powerShotStatusText.setColor('#ffff00');
+                this.powerShotStatusText.setColor('#00ff00');
             }
         } else {
             this.powerShotStatusText.setText('💫 Get close to the ball!');
