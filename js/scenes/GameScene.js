@@ -819,16 +819,22 @@ class GameScene extends Phaser.Scene {
     handleBallPlayerCollision(player) {
         const now = Date.now();
 
-        // Player parrying/deflecting the ball (Blade Ball style)
-        if (player.body.velocity.length() > 30 || (player.isHuman && player.attemptedParry)) {
-            let hitPower = GAME_CONFIG.HIT_POWER;
-            let parrySuccess = false;
+        // Check if player successfully parried (human players only)
+        let parrySuccess = false;
+        if (player.isHuman && player.attemptedParry) {
+            parrySuccess = true;
+            player.attemptedParry = false;
+        }
 
-            // Check if player attempted to parry
-            if (player.isHuman && player.attemptedParry) {
-                parrySuccess = true;
+        // Check if player is moving into ball (AI or movement-based deflection)
+        const isMovingIntoBall = player.body.velocity.length() > 50;
+
+        // If parry or moving into ball, deflect it
+        if (parrySuccess || isMovingIntoBall) {
+            let hitPower = GAME_CONFIG.HIT_POWER;
+
+            if (parrySuccess) {
                 hitPower *= 2.0; // PARRY HIT!
-                player.attemptedParry = false;
 
                 // Increase ball speed after successful parry
                 this.ball.hitCount++;
@@ -884,12 +890,15 @@ class GameScene extends Phaser.Scene {
                 }
             });
         }
-        // Ball hitting player (elimination check)
-        else if (this.ball.body.velocity.length() > 150) {
-            if (now > player.invulnerableUntil && !player.invincible) {
-                this.eliminatePlayer(player);
-                // Retarget after elimination
-                this.retargetBall();
+        // Ball hitting stationary player (elimination check)
+        else {
+            // Only eliminate if ball is moving fast
+            if (this.ball.body.velocity.length() > 150) {
+                if (now > player.invulnerableUntil && !player.invincible) {
+                    this.eliminatePlayer(player);
+                    // Retarget after elimination
+                    this.retargetBall();
+                }
             }
         }
     }
@@ -998,6 +1007,9 @@ class GameScene extends Phaser.Scene {
     }
 
     constrainPlayerToArena(player) {
+        // Don't constrain dead players (they're spectators outside arena)
+        if (!player.isAlive) return;
+
         const dx = player.x - this.arena.centerX;
         const dy = player.y - this.arena.centerY;
         const dist = Math.sqrt(dx * dx + dy * dy);
